@@ -298,7 +298,6 @@
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
-                <signal name="activate" handler="on_back" swapped="no"/>
                 <signal name="clicked" handler="on_back" swapped="no"/>
               </object>
               <packing>
@@ -316,7 +315,6 @@
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
-                <signal name="activate" handler="on_forward" swapped="no"/>
                 <signal name="clicked" handler="on_forward" swapped="no"/>
               </object>
               <packing>
@@ -347,7 +345,6 @@
                 <property name="receives_default">True</property>
                 <property name="use_action_appearance">False</property>
                 <property name="use_stock">True</property>
-                <signal name="activate" handler="on_apply" swapped="no"/>
                 <signal name="clicked" handler="on_apply" swapped="no"/>
               </object>
               <packing>

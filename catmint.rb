@@ -17,7 +17,7 @@ module Catmint
       @gui = gui
       @scroll = Gtk::ScrolledWindow.new nil, nil
       @view = WebKit::WebView.new
-      @link_hints = false
+      @link_hints, @title, @favicon = false, nil, nil
       connect_signals
       @scroll.add @view
       @view.load_string 'hi', nil, nil, nil
@@ -27,22 +27,11 @@ module Catmint
     def open(url)
       url = "http://#{url}"  unless url =~ /(.*?):\/\/(.*?)/
       @url = url
-
-      http = EM::HttpRequest.new(@url).get
-      http.errback { p "Error loading page" }
-      http.callback do
-        case http.response_header.status
-        when 301
-          open(http.response_header.location)
-        when 200
-          @html = http.response
-          display_html(@html, nil, nil, @url)
-        end
-      end
+      @view.open url
     end
 
     def reload
-      open(@url)
+      @view.reload
     end
 
     def follow_link i
@@ -76,31 +65,30 @@ module Catmint
       GObject.signal_connect(@view, "load-finished") do
         gui.statusbar.push 0, "#{@url} loaded."
         gui.entry_url.text = @view.uri  if @view.uri && @view.uri != "about:blank"
-
         gui.on_focus_entry_url  if @link_hints
-
-        page = gui.tabs.get_nth_page gui.tabs.page
-        box = gui.tabs.get_tab_label(page)
-        box = Gtk::Box.new(0, 0)#  if !box || box.is_a?(Gtk::Label)
-        box.pack_end Gtk::Label.new(@view.title), true, true, 0  if @view.title
-        box.show_all
-        gui.tabs.set_tab_label page, box
+        @title = @view.title
+        update_tab_label
       end
 
       GObject.signal_connect(view, "icon-loaded") do |*a|
-        icon = Gtk::Image.new_from_pixbuf(view.try_get_favicon_pixbuf 16, 16)
-        page = gui.tabs.get_nth_page gui.views.index(self)
-        box = gui.tabs.get_tab_label(page)
-        box = Gtk::Box.new(0, 0)  if !box || box.is_a?(Gtk::Label)
-        box.pack_start(icon, true, true, 0)
-        box.show_all
-        gui.tabs.set_tab_label page, box
+        @favicon = view.try_get_favicon_pixbuf 16, 16
+        update_tab_label
       end
 
       GObject.signal_connect(@view, "hovering-over-link") do |view, _, url, _|
         next  unless url
         gui.statusbar.push 0, url
       end
+
+      def update_tab_label
+        page = gui.tabs.get_nth_page gui.tabs.page
+        box = Gtk::Box.new(0, 0)
+        box.pack_start Gtk::Image.new_from_pixbuf(@favicon), true, true, 0  if @favicon
+        box.pack_end Gtk::Label.new(@title), true, true, 0  if @title
+        box.show_all
+        gui.tabs.set_tab_label page, box
+      end
+
     end
   end
 
@@ -155,6 +143,14 @@ module Catmint
     def on_focus_entry_url
       entry_url.text = ''
       entry_url.grab_focus
+    end
+
+    def on_back
+      current_view.view.go_back
+    end
+
+    def on_forward
+      current_view.view.go_forward
     end
 
     def on_new_tab
