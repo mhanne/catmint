@@ -3,7 +3,7 @@ module Catmint
   class Gui
 
     attr_accessor :history
-    attr_reader :views
+    attr_reader :views, :url_completion
     def current_view; @views[tabs.get_current_page]; end
 
     def initialize
@@ -12,7 +12,7 @@ module Catmint
       build_window
       @url_completion = Completion.new self, entry_url, area
       update_completion
-      window.show_all
+      window.show_all; search_bar.hide
     end
 
     def build_window
@@ -34,6 +34,10 @@ module Catmint
       accelerator("<Control>w", :menu_tabs_close)
       accelerator("<Control>Page_Up", :menu_tabs_prev)
       accelerator("<Control>Page_Down", :menu_tabs_next)
+      accelerator("<Control>s", :menu_view_find)
+      GObject.signal_connect(entry_search, "key-press-event") do |entry, key, _|
+        search_bar.hide  if key.string == "\e"
+      end
     end
 
     def update_completion
@@ -60,6 +64,16 @@ module Catmint
       entry_url.grab_focus
     end
 
+    def on_find
+      entry_search.grab_focus
+      search_bar.show
+    end
+
+    def on_search
+      current_view.view.search_text entry_search.text, check_search_casesensitive.active,
+      check_search_forward.active, check_search_wrap.active
+    end
+
     def on_back
       current_view.view.go_back
     end
@@ -79,6 +93,7 @@ module Catmint
       tabs.set_current_page tabs.page_num(scroll)
       content = File.read(File.join(File.dirname(__FILE__), "index.html"))
       view.display_html content, nil, nil, nil
+#      view.open 'sourceagency.org'
       on_focus_entry_url
     end
 

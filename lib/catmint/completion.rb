@@ -10,7 +10,7 @@ module Catmint
       @comp.set_match_func(->(comp, text, iter, _) {
           url = comp.get_model.value(iter, 0).get_string
           title = comp.get_model.value(iter, 1).get_string
-          !!(url =~/#{text}/ || title =~ /#{text}/)
+          !!(url =~/#{text}/i || title =~ /#{text}/i)
         }, nil, nil)
 
       @renderer = Gtk::CellRendererText.new

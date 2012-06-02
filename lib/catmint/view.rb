@@ -3,7 +3,11 @@ module Catmint
 
     attr_reader :gui, :scroll, :view, :url, :link_hints
     def frame; view.get_main_frame; end
-    def html; view.get_main_frame.get_data_source.get_data.str; end
+    def html
+      view.get_main_frame.get_data_source.get_data.str
+    rescue
+      ""
+    end
 
     def initialize gui
       @gui = gui
@@ -26,11 +30,19 @@ module Catmint
       @view.reload
     end
 
+    def links
+      html.scan(/<a.*?\shref=["|'](.*?)["|']\s*.*?>(.*?)<\/a>/)
+    end
+
     def follow_link i
-      url = html.scan(/<a.*?\shref=["|'](.*?)["|']\s*.*?>(.*?)<\/a>/)[i][0]
+      url = links[i][0] rescue nil
       @link_hints = false
-      uri = URI.parse(@url).merge(URI.parse(url))
-      open(uri.to_s)
+      if url
+        uri = URI.parse(@url).merge(URI.parse(url))
+        open(uri.to_s)
+      else
+        gui.entry_url.text = ''
+      end
     end
 
     def display_html html, content_type, encoding, base_uri
@@ -41,6 +53,11 @@ module Catmint
     def toggle_link_hints
       @link_hints = !@link_hints
       @link_hints ? display_html(html, nil, nil, @url) : reload
+      if @link_hints && links
+        links = html.scan(/<a.*?\shref=["|'](.*?)["|']\s*.*?>(.*?)<\/a>/)
+          .map.with_index{|l,i| [i.to_s, l[1]]}
+        gui.url_completion.update(links)
+      end
     end
 
     def connect_signals
@@ -71,11 +88,16 @@ EOS
       GObject.signal_connect(@view, "load-finished") do
         gui.statusbar.push 0, "#{@url} loaded."
         gui.entry_url.text = @view.uri  if @view.uri && @view.uri != "about:blank"
-        gui.on_focus_entry_url  if @link_hints
+        if @link_hints
+          gui.on_focus_entry_url
+          gui.entry_url.text = ""
+          gui.entry_url.set_position -1
+        end
         @title = @view.title
         update_tab_label
         gui.history[@view.uri] = @view.title
-        gui.update_completion
+        gui.update_completion  unless @link_hints
+        @view.search_text "Home", true, true, true
       end
 
       GObject.signal_connect(view, "icon-loaded") do |*a|

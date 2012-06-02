@@ -261,6 +261,17 @@
                         <signal name="activate" handler="on_reload" swapped="no"/>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkImageMenuItem" id="menu_view_find">
+                        <property name="label">gtk-find</property>
+                        <property name="use_action_appearance">False</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="accel_path">Ctrl+S</property>
+                        <property name="use_stock">True</property>
+                        <signal name="activate" handler="on_find" swapped="no"/>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
@@ -432,6 +443,86 @@
           </packing>
         </child>
         <child>
+          <object class="GtkBox" id="search_bar">
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkEntry" id="entry_search">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="events">GDK_KEY_PRESS_MASK | GDK_KEY_RELEASE_MASK | GDK_STRUCTURE_MASK</property>
+                <property name="invisible_char">●</property>
+                <signal name="changed" handler="on_search" swapped="no"/>
+                <signal name="button-press-event" handler="on_entry_search_button_press_event" swapped="no"/>
+                <signal name="activate" handler="on_search" swapped="no"/>
+                <signal name="key-press-event" handler="on_search_key" swapped="no"/>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="check_search_casesensitive">
+                <property name="label" translatable="yes">Case Sensitive</property>
+                <property name="use_action_appearance">False</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="use_action_appearance">False</property>
+                <property name="xalign">0</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="check_search_forward">
+                <property name="label" translatable="yes">Forward</property>
+                <property name="use_action_appearance">False</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="use_action_appearance">False</property>
+                <property name="xalign">0</property>
+                <property name="active">True</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkCheckButton" id="check_search_wrap">
+                <property name="label" translatable="yes">Wrap</property>
+                <property name="use_action_appearance">False</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">False</property>
+                <property name="use_action_appearance">False</property>
+                <property name="xalign">0</property>
+                <property name="active">True</property>
+                <property name="draw_indicator">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">3</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkBox" id="box3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -462,11 +553,8 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">3</property>
+            <property name="position">4</property>
           </packing>
-        </child>
-        <child>
-          <placeholder/>
         </child>
       </object>
     </child>
