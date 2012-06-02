@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <title> error </title>
+    <script type="text/javascript" src="./jquery.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function () {
+        $("#code").html("Error #" + code);
+        $("#message").html(message);
+      });
+    </script>
+    <style>
+      body { font-family: Inconsolata, Monospace }
+      #error {
+      background: red;
+      padding: 10px 20px 10px 20px;
+      margin: 20px;
+      }
+      #code { margin: 0px; }
+      #message { margin: 0px }
+    </style>
+  </head>
+  <body>
+    <div id="error">
+      <h2 id="code"></h2>
+      <p id="message"></p>
+    </div>
+  </body>
+</html>
