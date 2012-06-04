@@ -71,3 +71,6 @@ and browse every page you ever saw offline. search for it using the url bar and 
 * cookies
 * bookmarks
 * better index (sql LIKE queries suck)
+* rules to enable scripts/plugins/etc per page
+* rules to block resources by url
+* web inspector

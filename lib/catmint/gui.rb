@@ -7,14 +7,41 @@ module Catmint
     attr_reader :views, :url_completion
     def current_view; @views[tabs.get_current_page]; end
 
-    def initialize
+    attr_reader :db
+    attr_reader :config
+    DEFAULT_CONFIG = {
+      :datadir => File.join(ENV["HOME"], ".catmint"),
+      :server_url => "http://127.0.0.1:12345",
+    }
+
+    def initialize config = {}
       @views = []
-      @history = Catmint::History.new
-      @archive = Catmint::Archive.new
+      @config = DEFAULT_CONFIG.merge(config)
+      FileUtils.mkdir_p @config[:datadir]
+      connect_db
+      @history = Catmint::History.new(self)
+      @archive = Catmint::Archive.new(self)
       build_window
       @url_completion = Completion.new self, entry_url, area
       update_completion
       window.show_all; search_bar.hide
+    end
+
+    def connect_db
+      @db = Sequel.connect("sqlite://#{File.join(config[:datadir], "catmint.db")}")
+      migrate
+    end
+    def migrate
+      unless @db.tables.include?(:page)
+        @db.create_table :page do
+          primary_key :id
+          column :url, :string, :null => false, :unique => true, :index => true
+          column :title, :string
+          column :last_visit, Time
+          column :times_visited, :int
+          column :content, :text
+        end
+      end
     end
 
     def build_window
@@ -95,7 +122,6 @@ module Catmint
       tabs.set_current_page tabs.page_num(scroll)
       content = File.read(File.join(File.dirname(__FILE__), "index.html"))
       view.display_html content, nil, nil, nil
-#      view.open 'sourceagency.org'
       on_focus_entry_url
     end
 

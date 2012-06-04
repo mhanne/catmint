@@ -1,3 +1,11 @@
 #!/usr/bin/env ruby
 
 require_relative "../lib/catmint.rb"
+
+EM.run do
+  @gui = Catmint::Gui.new
+  Signal.trap("INT") { @gui.on_quit }
+  host, port = *@gui.config[:server_url].split("://")[1].split(":")
+  EM.start_server host, port, Catmint::ArchiveServer, @gui
+  EM.gtk_main
+end

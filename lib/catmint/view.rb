@@ -1,5 +1,3 @@
-require 'distillery'
-
 module Catmint
   class View
 
@@ -41,7 +39,7 @@ module Catmint
         u = URI.parse(res[:url])
         exists = gui.archive.exists(u.to_s)
         if exists
-          archive_link = URI.parse("#{Catmint::Archive::SERVER_URL}/#{u.scheme}__#{u.host}#{u.path}").to_s
+          archive_link = URI.parse("#{gui.config[:server_url]}/#{u.scheme}__#{u.host}#{u.path}").to_s
         end
         "<li onclick=\"document.location = '#{res[:url]}'\">" +
           "<h3><a href=\"#{res[:url]}\">#{res[:title]}</a></h3>" +
@@ -129,15 +127,12 @@ EOS
         @title = view.title
         update_tab_label
         html = view.main_frame.data_source.get_data.str rescue nil
-        next  unless html && !@link_hints
-        html.encode!("US-ASCII", :invalid => :replace, :undef => :replace)
-        content = Distillery.distill(html)
-        if content
-          content.gsub!(/<(.*?)>/, '')
-          content.gsub!(/\s+/, " ")
-          gui.history.add(view.uri, view.title, content)
+
+        if !(@link_hints || view.uri =~ /^file:\/\// ||
+            view.uri =~ /^#{gui.config[:server_url]}/)
+          gui.history.add(view.uri, view.title, html)
+          gui.update_completion  unless @link_hints
         end
-        gui.update_completion  unless @link_hints
         #view.search_text "Home", true, true, true
       end
 
@@ -152,7 +147,8 @@ EOS
       end
 
       GObject.signal_connect(@view, "resource-load-finished") do |view, frame, res, _|
-        next  unless res.uri =~ /^http/ && !(res.uri =~ /#{Catmint::Archive::SERVER_URL}/)
+        next  if res.uri =~ /^file:\/\//
+        next  if res.uri =~ /^#{gui.config[:server_url]}/
         begin
           ptr, len, _ = res.data.instance_eval { @struct.values }
           data = ptr.read_string(len)
@@ -190,7 +186,6 @@ EOS
       page = gui.tabs.get_nth_page(gui.views.index(self))
       gui.tabs.set_tab_label page, event_box
     end
-
 
   end
 end

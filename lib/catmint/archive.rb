@@ -5,11 +5,11 @@ require 'digest'
 module Catmint
 
   class Archive
-    SERVER_URL = "http://127.0.0.1:12345"
-    ARCHIVE_DIR = File.join(ENV["HOME"], ".catmint", "archive")
 
-    def initialize
-      FileUtils.mkdir_p(ARCHIVE_DIR)
+    attr_reader :gui
+
+    def initialize gui
+      @gui = gui
     end
 
     def write name, content
@@ -32,7 +32,7 @@ module Catmint
 
     def path name
       hash = Digest::SHA2.hexdigest(name.to_s.sub("://", '__'))
-      dir = File.join(ARCHIVE_DIR, hash[0...2])
+      dir = File.join(File.join(gui.config[:datadir], "archive"), hash[0...2])
       FileUtils.mkdir_p(dir)
       File.join(dir, hash)
     end
@@ -128,7 +128,7 @@ module Catmint
     end
 
     def translate_url url, base = nil
-      base = URI.parse(Catmint::Archive::SERVER_URL).merge((URI.parse(base) rescue "/"))
+      base = URI.parse(gui.config[:server_url]).merge((URI.parse(base) rescue "/"))
       base.merge(URI.parse(url))
     end
 
