@@ -1,3 +1,5 @@
+require 'distillery'
+
 module Catmint
   class View
 
@@ -21,9 +23,37 @@ module Catmint
     end
 
     def open(url)
-      url = "http://#{url}"  unless url =~ /(.*?):\/\/(.*?)/
-      @url = url
-      @view.open url
+      if url =~ /(.*?)\.(.*?)/
+        url = "http://#{url}"  unless url =~ /(.*?):\/\/(.*?)/
+        @url = url
+        @view.open url
+      else
+        search(url)
+      end
+    end
+
+    def search query
+      filename = File.join(File.dirname(__FILE__), 'search.html')
+      results = gui.history.search(query)
+      html = File.read(filename)
+      str = results.map do |res|
+        domain = res[:url].split("://")[1].split("/", 2)[0]
+        u = URI.parse(res[:url])
+        exists = gui.archive.exists(u.to_s)
+        if exists
+          archive_link = URI.parse("#{Catmint::Archive::SERVER_URL}/#{u.scheme}__#{u.host}#{u.path}").to_s
+        end
+        "<li onclick=\"document.location = '#{res[:url]}'\">" +
+          "<h3><a href=\"#{res[:url]}\">#{res[:title]}</a></h3>" +
+          "<h4><a href=\"#{domain}\">- #{domain}</a></h4>" +
+          (archive_link ? "<a id=\"archive\" href=\"#{archive_link}\">(Archive)</a>" : '') +
+          "<span id=\"visited\">#{res[:last_visit].strftime("%Y-%m-%d %H:%M")}</span>" +
+          "<p>#{res[:content]}</p></li>"
+      end.join
+      html.sub!("$results", str)
+      html.sub!("$num_results", results.size.to_s)
+      html.sub!("$query", query)
+      @view.load_string(html, nil, nil, "file:///#{filename}")
     end
 
     def reload
@@ -38,7 +68,7 @@ module Catmint
       url = links[i][0] rescue nil
       @link_hints = false
       if url
-        uri = URI.parse(@url).merge(URI.parse(url))
+        uri = @url ? URI.parse(@url).merge(URI.parse(url)) : URI.parse(url)
         open(uri.to_s)
       else
         gui.entry_url.text = ''
@@ -69,6 +99,8 @@ module Catmint
 
       GObject.signal_connect(@view, "load-committed") do
         gui.statusbar.push 0, "Loading #{@url}"
+        gui.progressbar.set_fraction 0.0
+        gui.progressbar.text = "0 %"
       end
 
       GObject.signal_connect(@view, "load-error") do |view, frame, url, error, _|
@@ -85,19 +117,28 @@ EOS
         true
       end
 
-      GObject.signal_connect(@view, "load-finished") do
+      GObject.signal_connect(@view, "load-finished") do |view, frame|
         gui.statusbar.push 0, "#{@url} loaded."
-        gui.entry_url.text = @view.uri  if @view.uri && @view.uri != "about:blank"
+        gui.entry_url.text = view.uri  if view.uri && view.uri != "about:blank" &&
+          gui.tabs.page == gui.views.index(self)
         if @link_hints
           gui.on_focus_entry_url
           gui.entry_url.text = ""
           gui.entry_url.set_position -1
         end
-        @title = @view.title
+        @title = view.title
         update_tab_label
-        gui.history[@view.uri] = @view.title
+        html = view.main_frame.data_source.get_data.str rescue nil
+        next  unless html && !@link_hints
+        html.encode!("US-ASCII", :invalid => :replace, :undef => :replace)
+        content = Distillery.distill(html)
+        if content
+          content.gsub!(/<(.*?)>/, '')
+          content.gsub!(/\s+/, " ")
+          gui.history.add(view.uri, view.title, content)
+        end
         gui.update_completion  unless @link_hints
-        @view.search_text "Home", true, true, true
+        #view.search_text "Home", true, true, true
       end
 
       GObject.signal_connect(view, "icon-loaded") do |*a|
@@ -110,33 +151,46 @@ EOS
         gui.statusbar.push 0, url
       end
 
-      def close
-        n = gui.views.index(self)
-        gui.tabs.remove_page(n)
-        gui.views.delete_at(n)
-        gui.on_quit  if gui.tabs.n_pages < 1
-      end
-
-      def update_tab_label
-        box = Gtk::Box.new(0, 0)
-        close_icon = Gtk::Image.new_from_stock("gtk-close", Gtk::IconSize.find(:menu))
-        eb = Gtk::EventBox.new
-        GObject.signal_connect(eb, "button-press-event") { close }
-        eb.add close_icon
-        box.pack_end eb, true, true, 0
-        box.pack_start Gtk::Image.new_from_pixbuf(@favicon), true, true, 0  if @favicon
-        box.pack_end Gtk::Label.new(@title), true, true, 0  if @title
-        box.show_all
-
-        event_box = Gtk::EventBox.new
-        event_box.add box
-        GObject.signal_connect(event_box, "button-press-event") do |box, button, _|
-          close  if button.button == 2
+      GObject.signal_connect(@view, "resource-load-finished") do |view, frame, res, _|
+        next  unless res.uri =~ /^http/ && !(res.uri =~ /#{Catmint::Archive::SERVER_URL}/)
+        begin
+          ptr, len, _ = res.data.instance_eval { @struct.values }
+          data = ptr.read_string(len)
+          EM.defer { gui.archive.write res.uri, data }
+        rescue
+          p $!
+          binding.pry
         end
-        page = gui.tabs.get_nth_page(gui.views.index(self))
-        gui.tabs.set_tab_label page, event_box
       end
-
     end
+
+    def close
+      n = gui.views.index(self)
+      gui.tabs.remove_page(n)
+      gui.views.delete_at(n)
+      gui.on_quit  if gui.tabs.n_pages < 1
+    end
+
+    def update_tab_label
+      box = Gtk::Box.new(0, 0)
+      close_icon = Gtk::Image.new_from_stock("gtk-close", Gtk::IconSize.find(:menu))
+      eb = Gtk::EventBox.new
+      GObject.signal_connect(eb, "button-press-event") { close }
+      eb.add close_icon
+      box.pack_end eb, true, true, 0
+      box.pack_start Gtk::Image.new_from_pixbuf(@favicon), true, true, 0  if @favicon
+      box.pack_end Gtk::Label.new(@title), true, true, 0  if @title
+      box.show_all
+
+      event_box = Gtk::EventBox.new
+      event_box.add box
+      GObject.signal_connect(event_box, "button-press-event") do |box, button, _|
+        close  if button.button == 2
+      end
+      page = gui.tabs.get_nth_page(gui.views.index(self))
+      gui.tabs.set_tab_label page, event_box
+    end
+
+
   end
 end

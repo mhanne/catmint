@@ -1,0 +1,73 @@
+= catmint
+
+simple keyboard-friendly browser using webkit/gtk through ruby-gir-ffi
+
+== features
+
+* webkit-based rendering/scripts/plugins etc
+* display/follow link hints for easy keyboard browsing
+* tabs
+* history / search / url completion
+* archive / index of every page you ever visited
+
+
+== requirements
+
+these are the package names needed in debian wheezy:
+
+ git build-essential gir1.2-gtk-3.0 gir1.2-webkit-3.0 libglib2.0-dev libgtk-3-dev libwebkitgtk-3.0-dev ruby1.9.1-dev libffi-dev libmagic-dev
+
+
+== setup
+
+install the above mentioned requirements using your package manager.
+
+currently, you have to get the development version of ruby-gir-ffi:
+
+ git clone git://github.com/mvz/ruby-gir-ffi && cd ruby-gir-ffi
+ gem build gir_ffi.gemspec
+ gem install gir_ffi-0.3.1.gem && cd ..
+
+then clone this repository (if you haven't already):
+
+ git clone git://github.com/mhanne/catmint && cd catmint
+
+build and install the gem (this will install gem dependencies too):
+
+ gem build catmint.gemspec
+ gem install catmint-0.0.1.gem
+
+and finally run catmint and surf away
+
+ catmint
+
+
+== usage
+
+you probably know how a browser works, clicking on links and all that...
+here's what makes catmint different.
+
+=== url bar
+
+enter a url/domain and it takes you there. enter a search term and it searches the archive.
+you can always focus the url bar with <b>Ctrl-l</b>.
+
+=== follow link
+
+press <b>Ctrl-f</b> and a number will appear next to each link. enter that number
+(or the link title using autocompletion) and it will follow that link.
+
+=== archive
+
+every page you visit is stored on disk and indexed so you can do full-text queries
+and browse every page you ever saw offline. search for it using the url bar and click the
+"Archive" link in the results.
+
+
+== todo
+
+* web search
+* form fillers / passwords
+* cookies
+* bookmarks
+* better index (sql LIKE queries suck)

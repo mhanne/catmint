@@ -1,14 +1,16 @@
 module Catmint
 
+
   class Gui
 
-    attr_accessor :history
+    attr_accessor :history, :archive
     attr_reader :views, :url_completion
     def current_view; @views[tabs.get_current_page]; end
 
     def initialize
       @views = []
-      @history = {}; load_history
+      @history = Catmint::History.new
+      @archive = Catmint::Archive.new
       build_window
       @url_completion = Completion.new self, entry_url, area
       update_completion
@@ -42,7 +44,7 @@ module Catmint
 
     def update_completion
       return  unless @url_completion
-      @url_completion.update @history.to_a
+      @url_completion.update @history.list
     end
 
     def on_display_link_hints
@@ -114,7 +116,6 @@ module Catmint
     end
 
     def on_quit
-      save_history
       puts "bye"; EM.stop
     end
 
@@ -124,20 +125,9 @@ module Catmint
 
     private
 
-    def save_history
-      FileUtils.mkdir_p(File.join(ENV["HOME"], ".catmint"))
-      filename = File.join(ENV["HOME"], ".catmint", "history.yml")
-      File.open(filename, "w") {|f| f.write(@history.to_yaml) }
-    end
-
-    def load_history
-      filename = File.join(ENV["HOME"], ".catmint", "history.yml")
-      @history = YAML.load_file(filename) rescue {}
-    end
-
     def accelerator accel, action
       send(action).add_accelerator("activate", accelgroup1,
-        *Gtk.accelerator_parse(accel), 0)
+        *Gtk.accelerator_parse(accel), 1)
     end
 
   end
