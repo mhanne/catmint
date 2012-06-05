@@ -1,0 +1,46 @@
+%html
+  %head
+    %title catmint
+    :css
+      body { font-family: Inconsolata, Monospace }
+
+  %body
+    %h1 catmint
+
+    %p
+      catmint is a simple keyboard friendly browser written in
+      ruby using webkit/gtk through the gir_ffi bindings.
+
+    %h3 keybindings
+
+    %table
+      %tr
+        %th C-b
+        %td back
+      %tr
+        %th C-m
+        %td forward
+      %tr
+        %th C-q
+        %td quit
+      %tr
+        %th C-l
+        %td focus and clear url entry
+      %tr
+        %th C-f
+        %td display / follow link hints
+      %tr
+        %th C-i
+        %td toggle inspector
+      %tr
+        %th C-t
+        %td new tab
+      %tr
+        %th C-PgUp
+        %td prev tab
+      %tr
+        %th C-PgDown
+        %td next tab
+      %tr
+        %th C-w
+        %td close tab

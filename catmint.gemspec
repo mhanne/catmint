@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
   s.add_dependency "sequel"
   s.add_dependency "sqlite3"
   s.add_dependency "ruby-filemagic"
+  s.add_dependency "haml"
   s.add_dependency "distillery"
 
 end

@@ -1,3 +1,6 @@
+require 'haml'
+require 'ostruct'
+
 module Catmint
   class View
 
@@ -32,26 +35,8 @@ module Catmint
 
     def search query
       filename = File.join(File.dirname(__FILE__), 'search.html')
-      results = gui.history.search(query)
-      html = File.read(filename)
-      str = results.map do |res|
-        domain = res[:url].split("://")[1].split("/", 2)[0]
-        u = URI.parse(res[:url])
-        exists = gui.archive.exists(u.to_s)
-        if exists
-          archive_link = URI.parse("#{gui.config[:server_url]}/#{u.scheme}__#{u.host}#{u.path}").to_s
-        end
-        "<li onclick=\"document.location = '#{res[:url]}'\">" +
-          "<h3><a href=\"#{res[:url]}\">#{res[:title]}</a></h3>" +
-          "<h4><a href=\"#{domain}\">- #{domain}</a></h4>" +
-          (archive_link ? "<a id=\"archive\" href=\"#{archive_link}\">(Archive)</a>" : '') +
-          "<span id=\"visited\">#{res[:last_visit].strftime("%Y-%m-%d %H:%M")}</span>" +
-          "<p>#{res[:content]}</p></li>"
-      end.join
-      html.sub!("$results", str)
-      html.sub!("$num_results", results.size.to_s)
-      html.sub!("$query", query)
-      @view.load_string(html, nil, nil, "file:///#{filename}")
+      matchset = gui.history.search(query)
+      render_template :search, :results => matchset, :query => query, :gui => gui
     end
 
     def reload
@@ -88,6 +73,13 @@ module Catmint
       end
     end
 
+    def render_template name, data = {}
+      filename = File.join(File.dirname(__FILE__), "templates", "#{name}.haml")
+      haml = Haml::Engine.new(File.read(filename))
+      result = haml.render(OpenStruct.new(data))
+      @view.load_string(result, "text/html", "utf-8", "file:///#{filename}")
+    end
+
     def connect_signals
       GObject.signal_connect(@view, "load-progress-changed") do
         gui.progressbar.set_fraction @view.get_progress
@@ -103,26 +95,18 @@ module Catmint
 
       GObject.signal_connect(@view, "load-error") do |view, frame, url, error, _|
         code, message = *GObjectIntrospection::GError.new(error).values[1..2]
-        filename = File.join(File.expand_path(File.dirname(__FILE__)), "error.html")
-        err = File.read(filename)
-        err.sub!("</body>", <<-EOS);
-<script type='text/javascript'>
-var code = '#{code}';
-var message = '#{message}';
-</script></body>
-EOS
-        display_html(err, nil, nil, "file:///#{filename}")
+        render_template :error, :code => code, :message => message
         true
       end
 
       GObject.signal_connect(@view, "load-finished") do |view, frame|
-        gui.statusbar.push 0, "#{@url} loaded."
-        gui.entry_url.text = view.uri  if view.uri && view.uri != "about:blank" &&
-          gui.tabs.page == gui.views.index(self)
+        gui.statusbar.push 0, "#{view.uri} loaded."
+        gui.entry_url.text = view.uri  if view.uri &&
+          gui.tabs.page == gui.views.index(self) &&
+          view.uri != "about:blank" && !(view.uri =~ /^file:\/\//)
         if @link_hints
           gui.on_focus_entry_url
           gui.entry_url.text = ""
-          gui.entry_url.set_position -1
         end
         @title = view.title
         update_tab_label

@@ -1,0 +1,43 @@
+%html
+  %head
+    %title search
+    :css
+      body { font-family: Inconsolata, Monospace }
+      #num_results, #query { font-weight: bold }
+      ul { list-style: none }
+      li { cursor: pointer; border-radius: 10px; padding: 5px }
+      li { background: #eee; margin-bottom: 5px }
+      h3 { margin: 0px }
+      h3, h4 { display: inline }
+      h4 {
+        font-weight: normal;
+        margin: 0px 0px 0px 10px
+      }
+      #visited, #archive { float: right; margin-left: 10px }
+      p { margin: 0px 0px 5px 0px; max-height: 50px; overflow: hidden; }
+
+  %body
+    %h1 search results
+    %p
+      %span= results.size
+      results matching query
+      %span= query
+    #results
+      %ul
+        - results.matches.each do |res|
+          - data = JSON::load(res.document.data)
+          - domain = data["url"].split("://")[1].split("/", 2)[0]
+          %li{:onclick => "document.location = '#{data[:url]}'"}
+            %h3
+              %a{:href => data["url"]}= data["title"]
+            %h4
+              (#{res.percent}%) -
+              %a{:href => "http://#{domain}"}= domain
+            - u = URI.parse(data["url"])
+            - if gui.archive.exists(u.to_s)
+              - archive_link = URI.parse("#{gui.config[:server_url]}/#{u.scheme}__#{u.host}#{u.path}").to_s
+              %a#archive{:href => archive_link} (Archive)
+            %span#visited
+              = data["times_visited"]
+              = Time.parse(data["last_visit"]).strftime("%Y-%m-%d %H:%M")
+            -# %p= res[:content]

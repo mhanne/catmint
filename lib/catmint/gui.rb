@@ -120,8 +120,7 @@ module Catmint
       @views << view
       tabs.append_page view.scroll, Gtk::Label.new("")
       tabs.set_current_page tabs.page_num(scroll)
-      content = File.read(File.join(File.dirname(__FILE__), "index.html"))
-      view.display_html content, nil, nil, nil
+      view.render_template :index
       on_focus_entry_url
     end
 
