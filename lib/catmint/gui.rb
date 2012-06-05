@@ -18,30 +18,12 @@ module Catmint
       @views = []
       @config = DEFAULT_CONFIG.merge(config)
       FileUtils.mkdir_p @config[:datadir]
-      connect_db
       @history = Catmint::History.new(self)
       @archive = Catmint::Archive.new(self)
       build_window
       @url_completion = Completion.new self, entry_url, area
       update_completion
       window.show_all; search_bar.hide
-    end
-
-    def connect_db
-      @db = Sequel.connect("sqlite://#{File.join(config[:datadir], "catmint.db")}")
-      migrate
-    end
-    def migrate
-      unless @db.tables.include?(:page)
-        @db.create_table :page do
-          primary_key :id
-          column :url, :string, :null => false, :unique => true, :index => true
-          column :title, :string
-          column :last_visit, Time
-          column :times_visited, :int
-          column :content, :text
-        end
-      end
     end
 
     def build_window

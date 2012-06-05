@@ -15,7 +15,7 @@ simple keyboard-friendly browser using webkit/gtk through ruby-gir-ffi
 
 these are the package names needed in debian wheezy:
 
- git build-essential gir1.2-gtk-3.0 gir1.2-webkit-3.0 libglib2.0-dev libgtk-3-dev libwebkitgtk-3.0-dev ruby1.9.1-dev libffi-dev libmagic-dev
+ git build-essential gir1.2-gtk-3.0 gir1.2-webkit-3.0 libglib2.0-dev libgtk-3-dev libwebkitgtk-3.0-dev ruby1.9.1-dev libffi-dev libmagic-dev libxapian-ruby1.9.1
 
 
 == setup
